@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import Oscilloscope from './Oscilloscope';
+import Waveform3D from './Waveform3D';
 
 export default function VoiceProcessor() {
   const [isListening, setIsListening] = useState(false);
@@ -63,6 +64,10 @@ export default function VoiceProcessor() {
 
       <div style={{ marginBottom: '16px' }}>
         <Oscilloscope analyser={analyser} />
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <Waveform3D analyser={analyser} />
       </div>
 
       {!isListening ? (
