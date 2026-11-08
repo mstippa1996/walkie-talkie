@@ -1,26 +1,14 @@
 import React, { useState, useRef } from 'react';
+import Oscilloscope from './Oscilloscope';
 
 export default function VoiceProcessor() {
   const [isListening, setIsListening] = useState(false);
+  const [analyser, setAnalyser] = useState(null);
   const audioContextRef = useRef(null);
   const sourceRef = useRef(null);
   const analyserRef = useRef(null);
   const streamRef = useRef(null);
   const rafRef = useRef(null);
-
-  const logMicValues = () => {
-    const analyser = analyserRef.current;
-    if (!analyser) return;
-
-    const data = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteTimeDomainData(data); // waveform samples, 0-255 (128 = silence)
-
-    // Average deviation from silence = rough volume level
-    const volume = data.reduce((sum, v) => sum + Math.abs(v - 128), 0) / data.length;
-    console.log('Mic volume:', volume.toFixed(2), 'Raw samples:', data);
-
-    rafRef.current = requestAnimationFrame(logMicValues);
-  };
 
   const startListening = async () => {
     try {
@@ -39,13 +27,13 @@ export default function VoiceProcessor() {
 
       // 4. Create an AnalyserNode (useful for volume levels or visualizers)
       const analyser = context.createAnalyser();
-      analyser.fftSize = 256;
+      analyser.fftSize = 1024;
       source.connect(analyser);
       analyserRef.current = analyser;
+      setAnalyser(analyser);
 
       setIsListening(true);
       console.log('Audio Context is running and connected to microphone.');
-      logMicValues();
     } catch (error) {
       console.error('Error accessing the microphone:', error);
     }
@@ -64,6 +52,7 @@ export default function VoiceProcessor() {
       audioContextRef.current.close();
     }
 
+    setAnalyser(null);
     setIsListening(false);
   };
 
@@ -71,6 +60,10 @@ export default function VoiceProcessor() {
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h3>React Web Audio API Voice Processor</h3>
       <p>Status: {isListening ? '🎤 Listening & Processing' : '⏹️ Stopped'}</p>
+
+      <div style={{ marginBottom: '16px' }}>
+        <Oscilloscope analyser={analyser} />
+      </div>
 
       {!isListening ? (
         <button onClick={startListening} style={{ padding: '10px 20px' }}>
