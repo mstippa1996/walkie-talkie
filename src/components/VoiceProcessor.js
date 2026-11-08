@@ -6,6 +6,21 @@ export default function VoiceProcessor() {
   const sourceRef = useRef(null);
   const analyserRef = useRef(null);
   const streamRef = useRef(null);
+  const rafRef = useRef(null);
+
+  const logMicValues = () => {
+    const analyser = analyserRef.current;
+    if (!analyser) return;
+
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteTimeDomainData(data); // waveform samples, 0-255 (128 = silence)
+
+    // Average deviation from silence = rough volume level
+    const volume = data.reduce((sum, v) => sum + Math.abs(v - 128), 0) / data.length;
+    console.log('Mic volume:', volume.toFixed(2), 'Raw samples:', data);
+
+    rafRef.current = requestAnimationFrame(logMicValues);
+  };
 
   const startListening = async () => {
     try {
@@ -30,12 +45,15 @@ export default function VoiceProcessor() {
 
       setIsListening(true);
       console.log('Audio Context is running and connected to microphone.');
+      logMicValues();
     } catch (error) {
       console.error('Error accessing the microphone:', error);
     }
   };
 
   const stopListening = () => {
+    cancelAnimationFrame(rafRef.current);
+
     // Stop all media tracks (turns off mic recording indicator)
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
