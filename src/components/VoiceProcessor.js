@@ -1,10 +1,22 @@
 import React, { useState, useRef } from 'react';
 import Oscilloscope from './Oscilloscope';
 import Waveform3D from './Waveform3D';
+import useSingingDetector from '../hooks/useSingingDetector';
+
+const READOUT_TEXT = {
+  idle: '-- MIC OFF --',
+  loading: 'LOADING MODEL...',
+  error: 'MODEL ERROR',
+  quiet: 'QUIET',
+  speaking: 'SPEAKING',
+  singing: '♪ SINGING ♪',
+};
 
 export default function VoiceProcessor() {
   const [isListening, setIsListening] = useState(false);
   const [analyser, setAnalyser] = useState(null);
+  const detector = useSingingDetector(analyser);
+  const readoutKey = detector.status === 'ready' ? detector.label : detector.status;
   const audioContextRef = useRef(null);
   const sourceRef = useRef(null);
   const analyserRef = useRef(null);
@@ -61,6 +73,30 @@ export default function VoiceProcessor() {
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h3>React Web Audio API Voice Processor</h3>
       <p>Status: {isListening ? '🎤 Listening & Processing' : '⏹️ Stopped'}</p>
+
+      <div
+        title={detector.error || undefined}
+        style={{
+          display: 'inline-block',
+          minWidth: '200px',
+          marginBottom: '16px',
+          padding: '8px 16px',
+          background: '#04120a',
+          color: '#33ff66',
+          border: '2px solid #000',
+          borderRadius: '6px',
+          fontFamily: 'monospace',
+          letterSpacing: '2px',
+          textShadow: '0 0 8px #33ff66',
+        }}
+      >
+        {READOUT_TEXT[readoutKey]}
+        {detector.status === 'ready' && (
+          <div style={{ fontSize: '11px', opacity: 0.7 }}>
+            SING {(detector.singingScore * 100).toFixed(0)}% · SPEECH {(detector.speechScore * 100).toFixed(0)}%
+          </div>
+        )}
+      </div>
 
       <div style={{ marginBottom: '16px' }}>
         <Oscilloscope analyser={analyser} />
